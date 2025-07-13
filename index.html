@@ -1,95 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+    <title>Fire Extinguisher Locator</title>
+    <!-- Papa Parse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.Kuytov's Resume</title>
+    <title>Fire Extinguisher Locator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1> Salim Kuytov</h1>
-        <img src="./assets/images/profile-picture.png" height="175" alt="profile photo of Salim Kuytov"/>
-    <p>“Be stubborn about your goals, <br/>
-        and flexible about your methods.”</p>
-    <h2>Summary</h2>
-    <p>
-        <ul>
-        <li>True global collaborator who builds sustainable relations.</li>
-        <li>Objective focused, self-propelled and <br/>
-            have a positive driving attitude.</li>
-        <li>Seek to understand before being understood <br/>
-            and continuously drive improvements.</li>
-        </ul>
-    </p>
-<hr/>
-
-    <h2><img src="./assets/images/edu-icon.png" height="30"/> Education</h2>
-    <ul>
-        <li>Bachelor degree in mechanical engineering | "Angel Kanchev" University of Rousse, Bulgaria | 2023  </li>
-        <li>CATIA V5 Certification | Haycad infotech | 2018 </li>
-        <li>III-rd Qualification degree Technician of transport equipment | Professional High School “PhD. Dr. Asen Zlatarov” Svishtov, Bulgaria | 2015</li>
-        <li>Microsoft IT Academy | 2011</li>
-    </ul>
-<hr/>
-    <h2> <img src="./assets/images/work-icon.png" height="30"> Work Experience</h2>
-    <ul>
-        <h3><li> Maintenance and repair manager | Septona Bulgaria AD | Currently</li></h3>
-            
-        <h3><li> CAD Designer | Linamar Light Metals Ruse | Aug. - Nov. 2022</li></h3>
-        <ul>
-            <li>Molds Update</li>
-        </ul>
-
-        <h3><li> IT Support Specialist | MIK Green | Apr. - July 2022</li></h3>
-        <ul> 
-            <li>Supporting and training photovoltaic installers</li>
-            <li>PV plant design</li>
-            <li>Marketing</li>
-            <li>Call Center</li>
-        </ul>
+    <div class="app-container">
+        <!-- Map Container -->
+        <div id="map" role="application" aria-label="Factory fire extinguisher map"></div>
+        
+        <!-- Search Bar -->
+        <div class="search-container" role="search">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search fire extinguisher ID..." class="form-control" aria-label="Search fire extinguisher ID" autocomplete="off">
+                <button id="clearSearch" class="btn btn--secondary btn--sm" aria-label="Clear search">Clear</button>
+            </div>
+            <ul id="searchSuggestions" class="search-suggestions" role="listbox" aria-live="polite"></ul>
+        </div>
+        
+        <!-- Floating Action Buttons -->
+        <div class="fab-container" aria-label="Actions">
+            <button id="dashboardBtn" class="fab" title="Dashboard" aria-label="Dashboard statistics">
+                <span aria-hidden="true">📊</span>
+            </button>
+            <button id="buildingsBtn" class="fab" title="Buildings" aria-label="Buildings navigation">
+                <span aria-hidden="true">🏢</span>
+            </button>
+            <button id="infoBtn" class="fab" title="Info" aria-label="Selected extinguisher info">
+                <span aria-hidden="true">ℹ️</span>
+            </button>
+            <button id="homeBtn" class="fab" title="Home" aria-label="Show all extinguishers">
+                <span aria-hidden="true">🏠</span>
+            </button>
+        </div>
+        
+        <!-- Dashboard Modal -->
+        <div id="dashboardModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dashboardTitle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="dashboardTitle">Dashboard</h2>
+                    <button class="modal-close" data-modal="dashboardModal" aria-label="Close dashboard">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <h3>Total Extinguishers</h3>
+                            <div class="stat-value" id="totalCount">0</div>
+                        </div>
+                        <div class="stat-card stat-card--success">
+                            <h3>Good Condition</h3>
+                            <div class="stat-value" id="goodCount">0</div>
+                        </div>
+                        <div class="stat-card stat-card--warning">
+                            <h3>Inspection Due Soon</h3>
+                            <div class="stat-value" id="dueSoonCount">0</div>
+                        </div>
+                        <div class="stat-card stat-card--error">
+                            <h3>Overdue</h3>
+                            <div class="stat-value" id="overdueCount">0</div>
+                        </div>
+                        <div class="stat-card stat-card--maintenance">
+                            <h3>Maintenance Required</h3>
+                            <div class="stat-value" id="maintenanceCount">0</div>
+                        </div>
+                    </div>
+                    <div class="dashboard-actions">
+                        <button id="exportCSV" class="btn btn--primary">Export CSV</button>
+                        <button id="exportJSON" class="btn btn--secondary">Export JSON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Buildings Modal -->
+        <div id="buildingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="buildingsTitle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="buildingsTitle">Buildings</h2>
+                    <button class="modal-close" data-modal="buildingsModal" aria-label="Close buildings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="buildings-list" id="buildingsList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info Modal -->
+        <div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="infoTitle">Extinguisher Information</h2>
+                    <button class="modal-close" data-modal="infoModal" aria-label="Close information">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="extinguisherInfo">
+                        <p>Select a fire extinguisher on the map to view detailed information.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
-        <h3><li> Design Engineer | Husqvarna Construction | May 2019 - Apr. 2022 </li></h3>
-        <ul>
-            <li>I was part of the engineering team which launched the first 
-                <a href="https://www.husqvarnaconstruction.com/uk/concrete-screeds/bv30i/">Husqvarna BV 30i screed</a> from Bulgaria 
-            </li>
-
-            <li>Conceptualize and design machine systems in CATIA V5 taking into account <br/>
-                 maintainability, testability, affordability, safety and security.</li>
-            <li> Build prototypes and test them to verify the concepts.</li>
-            <li>Review and discussed concepts and solutions together with the team. </li>
-            <li>Actively contributed to product safety risk analysis and certification activities</li>
-        </ul>
-
-        <h3><li>Team Manager |  <a href="https://www.facebook.com/TeamAvtomobilist/" ><img src="./assets/images/logo-avtomobilist.png" alt="TEAM AVTOMOBILIST" height="17"></a>  | "Angel Kanchev" University of Rousse, Bulgaria | 2017 - Present Days</li></h3>
-            <ul>
-                <li>Shell Eco-marathon 2017 | London | 360 km/kWh</li>
-                <li>Shell Eco-marathon 2018 | London | 472 km/kWh</li>
-                <li>Shell Eco-marathon 2019 | London | New Vehicle, Design Award 2nd place </li>
-                <li>Shell Eco-marathon 2020-2021 | Virtual Events due to COVID-19 </li>
-                <li>Shell Eco-marathon 2022 | Nogaro, France | 505 km/kWh </li>
-                <li>Shell Eco-marathon 2022 | Nogaro, France | 571 km/kWh </li>
-            </ul>
-    </ul>
-    <hr/>
-
-    <h3>Skills</h3>
-    <ul>
-        <li>CATIA V5 </li>
-        <li>MS Office</li>
-        <li>3DS MAX</li>
-        <li>Adobe Creative Cloud</li>
-            <ul> 
-                <li>Photoshop</li>
-                <li>Lightroom</li>
-                <li>Illustrator</li>
-                <li>Premiere Pro</li>
-                <li>After Effects</li>
-                <li>Audition</li>
-
-            </ul> 
-        <li>Drone Pilot</li>
-    </ul>
-    <hr/>
-    <a href="./public/certificates.html"> CERTIFICATES </a>  |  <a href="https://www.behance.net/salimkuytov">MY HOBBY</a> | <a href="./public/contact.html"> CONTACT ME</a>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
